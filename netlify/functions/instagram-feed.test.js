@@ -71,4 +71,18 @@ describe('instagram-feed function', () => {
     const result = await handler({ httpMethod: 'GET', queryStringParameters: {} });
     expect(result.statusCode).toBe(502);
   });
+
+  test('returns 502 when media response has no data array', async () => {
+    global.fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: '123', username: 'alocalx' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ error: { code: 190, message: 'Invalid token' } }),
+      });
+    const result = await handler({ httpMethod: 'GET', queryStringParameters: {} });
+    expect(result.statusCode).toBe(502);
+  });
 });

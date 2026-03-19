@@ -30,6 +30,10 @@ exports.handler = async function (event) {
   }
   const mediaData = await mediaRes.json();
 
+  if (!Array.isArray(mediaData.data)) {
+    return { statusCode: 502, headers, body: JSON.stringify({ error: 'Instagram API error' }) };
+  }
+
   return {
     statusCode: 200,
     headers,

@@ -7,9 +7,12 @@
     "doc": "docs"
   },
   "scripts": {
-    "build": "esbuild src/index.js --bundle --minify --outfile=public/widgets.js",
-    "build:dev": "esbuild src/index.js --bundle --sourcemap --outfile=public/widgets.js",
-    "watch": "esbuild src/index.js --bundle --sourcemap --outfile=public/widgets.js --watch",
+    "build": "npm run build:widgets && npm run build:dashboard",
+    "build:widgets": "esbuild src/index.js --bundle --minify --outfile=public/widgets.js",
+    "build:dashboard": "node scripts/build-dashboard.js",
+    "build:widgets:dev": "esbuild src/index.js --bundle --sourcemap --outfile=public/widgets.js",
+    "build:dashboard:dev": "esbuild src/dashboard/index.js --bundle --sourcemap --outfile=public/dashboard.js",
+    "watch": "concurrently \"npm run build:widgets:dev -- --watch\" \"npm run build:dashboard:dev -- --watch\"",
     "test": "jest"
   },
   "jest": {
@@ -19,9 +22,14 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "concurrently": "^9.2.1",
+    "dotenv": "^17.3.1",
     "esbuild": "^0.27.4",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "jsdom": "^29.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.99.3"
   }
 }

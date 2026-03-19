@@ -1,7 +1,7 @@
 jest.mock('../../src/lib/supabaseAdmin', () => ({ getAdminClient: jest.fn() }));
 
 const { getAdminClient } = require('../../src/lib/supabaseAdmin');
-const { handler } = require('./widget-save');
+const { handler } = require('../functions/widget-save');
 
 describe('widget-save function', () => {
   beforeEach(() => jest.clearAllMocks());

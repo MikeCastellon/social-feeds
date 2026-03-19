@@ -1,5 +1,5 @@
 global.fetch = jest.fn();
-const { handler } = require('./places-search');
+const { handler } = require('../functions/places-search');
 
 describe('places-search function', () => {
   beforeEach(() => {

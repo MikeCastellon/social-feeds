@@ -1,8 +1,8 @@
-jest.mock('./widget-lookup', () => ({ getWidgetConfig: jest.fn() }));
+jest.mock('../functions/widget-lookup', () => ({ getWidgetConfig: jest.fn() }));
 global.fetch = jest.fn();
 
-const { getWidgetConfig } = require('./widget-lookup');
-const { handler } = require('./instagram-feed');
+const { getWidgetConfig } = require('../functions/widget-lookup');
+const { handler } = require('../functions/instagram-feed');
 
 const BASE_EVENT = { httpMethod: 'GET', queryStringParameters: {} };
 const MOCK_CONFIG = { type: 'instagram-feed', widget_key: 'xyz', instagram_access_token: 'token123' };

@@ -3,7 +3,7 @@ jest.mock('../../src/lib/supabaseAdmin', () => ({
 }));
 
 const { getAdminClient } = require('../../src/lib/supabaseAdmin');
-const { getWidgetConfig } = require('./widget-lookup');
+const { getWidgetConfig } = require('../functions/widget-lookup');
 
 describe('getWidgetConfig', () => {
   beforeEach(() => jest.clearAllMocks());

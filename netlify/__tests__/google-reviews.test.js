@@ -1,8 +1,8 @@
-jest.mock('./widget-lookup', () => ({ getWidgetConfig: jest.fn() }));
+jest.mock('../functions/widget-lookup', () => ({ getWidgetConfig: jest.fn() }));
 global.fetch = jest.fn();
 
-const { getWidgetConfig } = require('./widget-lookup');
-const { handler } = require('./google-reviews');
+const { getWidgetConfig } = require('../functions/widget-lookup');
+const { handler } = require('../functions/google-reviews');
 
 const BASE_EVENT = { httpMethod: 'GET', queryStringParameters: {} };
 

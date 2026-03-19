@@ -2,7 +2,7 @@ jest.mock('../../src/lib/supabaseAdmin', () => ({ getAdminClient: jest.fn() }));
 global.fetch = jest.fn();
 
 const { getAdminClient } = require('../../src/lib/supabaseAdmin');
-const { handler } = require('./instagram-auth-callback');
+const { handler } = require('../functions/instagram-auth-callback');
 
 describe('instagram-auth-callback', () => {
   beforeEach(() => {

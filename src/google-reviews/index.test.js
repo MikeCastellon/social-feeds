@@ -29,23 +29,23 @@ const MOCK_DATA = {
 };
 
 describe('mountGoogleReviews', () => {
-  test('shows error when data-place-id missing', () => {
+  test('shows error when data-widget-key missing', () => {
     const { mountGoogleReviews } = getModule();
     const el = document.createElement('div');
     document.body.appendChild(el);
     mountGoogleReviews(el);
-    expect(el.textContent).toContain('Missing data-place-id');
+    expect(el.textContent).toContain('Missing data-widget-key');
     el.remove();
   });
 
-  test('calls fetch with encoded place_id', () => {
+  test('calls fetch with encoded widget_key', () => {
     global.fetch.mockResolvedValue({ json: async () => MOCK_DATA });
     const { mountGoogleReviews } = getModule();
     const el = document.createElement('div');
     document.body.appendChild(el);
-    el.dataset.placeId = 'ChIJ+test/123';
+    el.dataset.widgetKey = 'abc+test/123';
     mountGoogleReviews(el);
-    expect(global.fetch).toHaveBeenCalledWith('/.netlify/functions/google-reviews?place_id=ChIJ%2Btest%2F123');
+    expect(global.fetch).toHaveBeenCalledWith('/.netlify/functions/google-reviews?widget_key=abc%2Btest%2F123');
     el.remove();
   });
 
@@ -54,7 +54,7 @@ describe('mountGoogleReviews', () => {
     const { mountGoogleReviews } = getModule();
     const el = document.createElement('div');
     document.body.appendChild(el);
-    el.dataset.placeId = 'ChIJtest';
+    el.dataset.widgetKey = 'abc-widget-key';
     mountGoogleReviews(el);
     expect(el.innerHTML).toContain('Loading reviews');
     el.remove();
@@ -65,7 +65,7 @@ describe('mountGoogleReviews', () => {
     const { mountGoogleReviews } = getModule();
     const el = document.createElement('div');
     document.body.appendChild(el);
-    el.dataset.placeId = 'ChIJtest';
+    el.dataset.widgetKey = 'abc-widget-key';
     mountGoogleReviews(el);
     expect(document.getElementById('sf-gr-styles')).not.toBeNull();
     el.remove();
@@ -76,7 +76,7 @@ describe('mountGoogleReviews', () => {
     const { mountGoogleReviews } = getModule();
     const el = document.createElement('div');
     document.body.appendChild(el);
-    el.dataset.placeId = 'ChIJtest';
+    el.dataset.widgetKey = 'abc-widget-key';
     mountGoogleReviews(el);
     // Wait for promise to settle
     await new Promise(resolve => setTimeout(resolve, 10));

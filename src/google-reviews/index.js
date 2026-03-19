@@ -53,9 +53,9 @@ function cardHTML(review) {
 }
 
 function mountGoogleReviews(el) {
-  const placeId = el.dataset.placeId;
-  if (!placeId) {
-    el.textContent = 'Missing data-place-id';
+  const widgetKey = el.dataset.widgetKey;
+  if (!widgetKey) {
+    el.textContent = 'Missing data-widget-key';
     return;
   }
 
@@ -68,7 +68,7 @@ function mountGoogleReviews(el) {
 
   el.innerHTML = '<div class="sf-gr-wrap"><div class="sf-gr-loading">Loading reviews...</div></div>';
 
-  fetch('/.netlify/functions/google-reviews?place_id=' + encodeURIComponent(placeId))
+  fetch('/.netlify/functions/google-reviews?widget_key=' + encodeURIComponent(widgetKey))
     .then(function(r) { return r.json(); })
     .then(function(data) { renderWidget(el, data); })
     .catch(function() {

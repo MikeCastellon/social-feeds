@@ -1,0 +1,27 @@
+{
+  "name": "socialfeeds",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build": "esbuild src/index.js --bundle --minify --outfile=public/widgets.js",
+    "build:dev": "esbuild src/index.js --bundle --sourcemap --outfile=public/widgets.js",
+    "watch": "esbuild src/index.js --bundle --sourcemap --outfile=public/widgets.js --watch",
+    "test": "jest"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "esbuild": "^0.27.4",
+    "jest": "^30.3.0",
+    "jest-environment-jsdom": "^30.3.0",
+    "jsdom": "^29.0.0"
+  }
+}

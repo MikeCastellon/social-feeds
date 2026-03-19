@@ -25,8 +25,10 @@ function renderFeed(el, data) {
   var wrap = el.querySelector('.sf-ig-wrap');
 
   var postsHTML = posts.map(function(post) {
-    var imgSrc = post.media_type === 'VIDEO' ? post.thumbnail_url : post.media_url;
-    var isVideo = post.media_type === 'VIDEO' || post.media_type === 'CAROUSEL_ALBUM';
+    var imgSrc = post.media_type === 'VIDEO'
+      ? (post.thumbnail_url || post.media_url || '')
+      : (post.media_url || '');
+    var isVideo = post.media_type === 'VIDEO';
     return '<a class="sf-ig-post" href="' + post.permalink + '" target="_blank" rel="noopener">' +
       '<img src="' + imgSrc + '" alt="Instagram post" loading="lazy">' +
       (isVideo ? '<span class="sf-ig-video-icon">&#9654;</span>' : '') +
@@ -36,7 +38,7 @@ function renderFeed(el, data) {
   wrap.innerHTML =
     '<div class="sf-ig-header">' +
     '<div class="sf-ig-avatar-ring">' +
-    '<img src="' + profile.profile_picture_url + '" alt="' + profile.username + '" onerror="this.src=\'\'">' +
+    '<img src="' + profile.profile_picture_url + '" alt="' + profile.username + '" onerror="this.onerror=null;this.src=\'\'">' +
     '</div>' +
     '<div class="sf-ig-meta">' +
     '<div class="sf-ig-handle">@' + profile.username + '</div>' +

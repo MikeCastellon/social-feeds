@@ -102,4 +102,26 @@ describe('mountInstagramFeed', () => {
     expect(el.querySelector('.sf-ig-video-icon')).not.toBeNull();
     el.remove();
   });
+
+  test('renders VIDEO post with null thumbnail using media_url fallback', async () => {
+    const dataWithNullThumb = {
+      profile: MOCK_DATA.profile,
+      posts: [{
+        id: '3',
+        media_type: 'VIDEO',
+        media_url: 'https://example.com/video.mp4',
+        thumbnail_url: null,
+        permalink: 'https://www.instagram.com/p/ghi/',
+      }],
+    };
+    global.fetch.mockResolvedValue({ json: async () => dataWithNullThumb });
+    const { mountInstagramFeed } = getModule();
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    mountInstagramFeed(el);
+    await new Promise(resolve => setTimeout(resolve, 10));
+    const img = el.querySelector('.sf-ig-post img');
+    expect(img.getAttribute('src')).toBe('https://example.com/video.mp4');
+    el.remove();
+  });
 });

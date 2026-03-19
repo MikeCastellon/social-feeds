@@ -37,17 +37,16 @@ const styles = `
   .sf-gr-carousel { position: relative; overflow: hidden; }
   .sf-gr-track {
     display: flex;
-    gap: 16px;
     transition: transform 0.3s ease;
   }
   .sf-gr-card {
+    flex: 0 0 25%;
+    box-sizing: border-box;
+    padding: 0 8px;
     background: #fff;
     border-radius: 8px;
-    padding: 16px;
-    min-width: calc(25% - 12px);
     flex-shrink: 0;
     box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    box-sizing: border-box;
   }
   .sf-gr-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
   .sf-gr-avatar {
@@ -84,7 +83,7 @@ const styles = `
   }
   .sf-gr-dot.active { background: #1a73e8; }
   @media (max-width: 768px) {
-    .sf-gr-card { min-width: calc(100% - 0px); }
+    .sf-gr-card { flex: 0 0 100%; }
   }
 `;
 

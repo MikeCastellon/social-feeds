@@ -43,9 +43,9 @@ describe('mountGoogleReviews', () => {
     const { mountGoogleReviews } = getModule();
     const el = document.createElement('div');
     document.body.appendChild(el);
-    el.dataset.placeId = 'ChIJtest';
+    el.dataset.placeId = 'ChIJ+test/123';
     mountGoogleReviews(el);
-    expect(global.fetch).toHaveBeenCalledWith('/.netlify/functions/google-reviews?place_id=ChIJtest');
+    expect(global.fetch).toHaveBeenCalledWith('/.netlify/functions/google-reviews?place_id=ChIJ%2Btest%2F123');
     el.remove();
   });
 

@@ -1,5 +1,13 @@
 const { styles } = require('./styles.js');
 
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 const GOOGLE_LOGO_SVG = `<svg width="80" height="26" viewBox="0 0 272 92" xmlns="http://www.w3.org/2000/svg">
   <path d="M115.75 47.18c0 12.77-9.99 22.18-22.25 22.18s-22.25-9.41-22.25-22.18C71.25 34.32 81.24 25 93.5 25s22.25 9.32 22.25 22.18zm-9.74 0c0-7.98-5.79-13.44-12.51-13.44S80.99 39.2 80.99 47.18c0 7.9 5.79 13.44 12.51 13.44s12.51-5.55 12.51-13.44z" fill="#EA4335"/>
   <path d="M163.75 47.18c0 12.77-9.99 22.18-22.25 22.18s-22.25-9.41-22.25-22.18c0-12.85 9.99-22.18 22.25-22.18s22.25 9.32 22.25 22.18zm-9.74 0c0-7.98-5.79-13.44-12.51-13.44s-12.51 5.46-12.51 13.44c0 7.9 5.79 13.44 12.51 13.44s12.51-5.55 12.51-13.44z" fill="#FBBC05"/>
@@ -10,11 +18,13 @@ const GOOGLE_LOGO_SVG = `<svg width="80" height="26" viewBox="0 0 272 92" xmlns=
 </svg>`;
 
 function starsHTML(rating) {
-  return '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
+  var r = Math.min(5, Math.max(0, Math.round(Number(rating) || 0)));
+  return '★'.repeat(r) + '☆'.repeat(5 - r);
 }
 
 function initials(name) {
-  return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+  if (!name) return '?';
+  return name.split(' ').filter(Boolean).map(function(w) { return w[0]; }).join('').slice(0, 2).toUpperCase() || '?';
 }
 
 function cardHTML(review) {
@@ -22,21 +32,21 @@ function cardHTML(review) {
   const isLong = review.text.length > maxLen;
   const displayText = isLong ? review.text.slice(0, maxLen) + '...' : review.text;
   const avatar = review.profile_photo_url
-    ? `<img class="sf-gr-avatar" src="${review.profile_photo_url}" alt="${review.author_name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    ? `<img class="sf-gr-avatar" src="${esc(review.profile_photo_url)}" alt="${esc(review.author_name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
     : '';
-  const initEl = `<div class="sf-gr-avatar-initials" ${review.profile_photo_url ? 'style="display:none"' : ''}>${initials(review.author_name)}</div>`;
+  const initEl = `<div class="sf-gr-avatar-initials" ${review.profile_photo_url ? 'style="display:none"' : ''}>${initials(esc(review.author_name))}</div>`;
 
   return `<div class="sf-gr-card">
     <div class="sf-gr-card-header">
       ${avatar}${initEl}
       <div class="sf-gr-reviewer">
-        <div class="sf-gr-name">${review.author_name} <span class="sf-gr-check">&#10003;</span></div>
-        <div class="sf-gr-time">${review.relative_time_description}</div>
+        <div class="sf-gr-name">${esc(review.author_name)} <span class="sf-gr-check">&#10003;</span></div>
+        <div class="sf-gr-time">${esc(review.relative_time_description)}</div>
       </div>
     </div>
     <div class="sf-gr-card-stars">${starsHTML(review.rating)}</div>
     <div class="sf-gr-text">
-      <span class="sf-gr-review-body">${displayText}</span>
+      <span class="sf-gr-review-body">${esc(displayText)}</span>
       ${isLong ? '<span class="sf-gr-readmore"> Read more</span>' : ''}
     </div>
   </div>`;
@@ -71,6 +81,7 @@ function renderWidget(el, data) {
   var rating = data.rating;
   var user_ratings_total = data.user_ratings_total;
   var url = data.url;
+  var safeUrl = (typeof url === 'string' && url.startsWith('https://')) ? url : '#';
   var reviews = data.reviews;
   var wrap = el.querySelector('.sf-gr-wrap');
 
@@ -91,7 +102,7 @@ function renderWidget(el, data) {
     '<span class="sf-gr-stars">' + starsHTML(rating) + '</span>' +
     '<span class="sf-gr-count">(' + user_ratings_total + ')</span>' +
     '</div></div>' +
-    '<a class="sf-gr-btn" href="' + url + '" target="_blank" rel="noopener">Review us on Google</a>' +
+    '<a class="sf-gr-btn" href="' + safeUrl + '" target="_blank" rel="noopener">Review us on Google</a>' +
     '</div>' +
     '<div class="sf-gr-carousel">' +
     '<button class="sf-gr-arrow sf-gr-prev">&#8249;</button>' +
@@ -99,6 +110,8 @@ function renderWidget(el, data) {
     '<button class="sf-gr-arrow sf-gr-next">&#8250;</button>' +
     '</div>' +
     '<div class="sf-gr-dots">' + dotsHTML + '</div>';
+
+  var carouselEl = wrap.querySelector('.sf-gr-carousel');
 
   // Read more toggle
   var readmoreBtns = wrap.querySelectorAll('.sf-gr-readmore');
@@ -118,8 +131,8 @@ function renderWidget(el, data) {
 
   function goTo(p) {
     page = Math.max(0, Math.min(p, totalPages - 1));
-    var pct = (page / totalPages) * 100;
-    track.style.transform = 'translateX(-' + pct + '%)';
+    var containerWidth = carouselEl.offsetWidth || 0;
+    track.style.transform = 'translateX(-' + (page * containerWidth) + 'px)';
     dots.forEach(function(d, i) {
       d.classList.toggle('active', i === page);
     });

@@ -85,4 +85,10 @@ describe('instagram-feed function', () => {
     const result = await handler({ httpMethod: 'GET', queryStringParameters: {} });
     expect(result.statusCode).toBe(502);
   });
+
+  test('returns 502 when fetch throws (network error)', async () => {
+    global.fetch.mockRejectedValue(new Error('network error'));
+    const result = await handler({ httpMethod: 'GET', queryStringParameters: {} });
+    expect(result.statusCode).toBe(502);
+  });
 });

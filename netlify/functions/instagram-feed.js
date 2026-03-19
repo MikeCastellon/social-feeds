@@ -18,25 +18,29 @@ exports.handler = async function (event) {
 
   const base = 'https://graph.instagram.com/me';
 
-  const profileRes = await fetch(`${base}?fields=${PROFILE_FIELDS}&access_token=${token}`);
-  if (!profileRes.ok) {
-    return { statusCode: 502, headers, body: JSON.stringify({ error: 'Instagram API error' }) };
-  }
-  const profile = await profileRes.json();
+  try {
+    const profileRes = await fetch(`${base}?fields=${PROFILE_FIELDS}&access_token=${token}`);
+    if (!profileRes.ok) {
+      return { statusCode: 502, headers, body: JSON.stringify({ error: 'Instagram API error' }) };
+    }
+    const profile = await profileRes.json();
 
-  const mediaRes = await fetch(`${base}/media?fields=${MEDIA_FIELDS}&limit=24&access_token=${token}`);
-  if (!mediaRes.ok) {
-    return { statusCode: 502, headers, body: JSON.stringify({ error: 'Instagram media error' }) };
-  }
-  const mediaData = await mediaRes.json();
+    const mediaRes = await fetch(`${base}/media?fields=${MEDIA_FIELDS}&limit=24&access_token=${token}`);
+    if (!mediaRes.ok) {
+      return { statusCode: 502, headers, body: JSON.stringify({ error: 'Instagram media error' }) };
+    }
+    const mediaData = await mediaRes.json();
 
-  if (!Array.isArray(mediaData.data)) {
-    return { statusCode: 502, headers, body: JSON.stringify({ error: 'Instagram API error' }) };
-  }
+    if (!Array.isArray(mediaData.data)) {
+      return { statusCode: 502, headers, body: JSON.stringify({ error: 'Instagram API error' }) };
+    }
 
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify({ profile, posts: mediaData.data }),
-  };
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ profile, posts: mediaData.data }),
+    };
+  } catch (err) {
+    return { statusCode: 502, headers, body: JSON.stringify({ error: 'Instagram API unavailable' }) };
+  }
 };

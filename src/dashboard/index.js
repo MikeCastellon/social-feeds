@@ -21,37 +21,10 @@ supabase.auth.getSession().then(function(ref) {
 // ── LOGIN PAGE ───────────────────────────────────────────────
 function initLogin() {
   var btnGoogle = document.getElementById('btnGoogle');
-  var btnSendCode = document.getElementById('btnSendCode');
-  var btnVerify = document.getElementById('btnVerify');
-  var phoneInput = document.getElementById('phoneInput');
-  var otpInput = document.getElementById('otpInput');
-  var otpSection = document.getElementById('otpSection');
   var msg = document.getElementById('msg');
 
   btnGoogle.addEventListener('click', function() {
     supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/dashboard.html' } });
-  });
-
-  btnSendCode.addEventListener('click', async function() {
-    var phone = phoneInput.value.trim();
-    if (!phone) { msg.textContent = 'Please enter your phone number'; return; }
-    msg.textContent = '';
-    btnSendCode.textContent = 'Sending...';
-    var ref = await supabase.auth.signInWithOtp({ phone: phone });
-    btnSendCode.textContent = 'Send Code';
-    if (ref.error) { msg.textContent = ref.error.message; return; }
-    otpSection.style.display = 'block';
-    document.getElementById('phoneSection').querySelector('button').style.display = 'none';
-  });
-
-  btnVerify.addEventListener('click', async function() {
-    var phone = phoneInput.value.trim();
-    var token = otpInput.value.trim();
-    btnVerify.textContent = 'Verifying...';
-    var ref = await supabase.auth.verifyOtp({ phone: phone, token: token, type: 'sms' });
-    btnVerify.textContent = 'Verify';
-    if (ref.error) { msg.textContent = ref.error.message; return; }
-    window.location.href = '/dashboard.html';
   });
 }
 

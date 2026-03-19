@@ -1,6 +1,12 @@
 const { styles } = require('./styles.js');
 
 function mountInstagramFeed(el) {
+  var widgetKey = el.dataset.widgetKey;
+  if (!widgetKey) {
+    el.textContent = 'data-widget-key is required';
+    return;
+  }
+
   if (!document.getElementById('sf-ig-styles')) {
     var style = document.createElement('style');
     style.id = 'sf-ig-styles';
@@ -10,7 +16,7 @@ function mountInstagramFeed(el) {
 
   el.innerHTML = '<div class="sf-ig-wrap"><div class="sf-ig-loading">Loading feed...</div></div>';
 
-  fetch('/.netlify/functions/instagram-feed')
+  fetch('/.netlify/functions/instagram-feed?widget_key=' + encodeURIComponent(widgetKey))
     .then(function(r) { return r.json(); })
     .then(function(data) { renderFeed(el, data); })
     .catch(function() {

@@ -39,13 +39,25 @@ const MOCK_DATA = {
 };
 
 describe('mountInstagramFeed', () => {
-  test('calls instagram-feed function', () => {
+  test('calls instagram-feed function with widget_key', () => {
+    global.fetch.mockResolvedValue({ json: async () => MOCK_DATA });
+    const { mountInstagramFeed } = getModule();
+    const el = document.createElement('div');
+    el.dataset.widgetKey = 'test-key-123';
+    document.body.appendChild(el);
+    mountInstagramFeed(el);
+    expect(global.fetch).toHaveBeenCalledWith('/.netlify/functions/instagram-feed?widget_key=test-key-123');
+    el.remove();
+  });
+
+  test('shows error if data-widget-key is missing', () => {
     global.fetch.mockResolvedValue({ json: async () => MOCK_DATA });
     const { mountInstagramFeed } = getModule();
     const el = document.createElement('div');
     document.body.appendChild(el);
     mountInstagramFeed(el);
-    expect(global.fetch).toHaveBeenCalledWith('/.netlify/functions/instagram-feed');
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(el.textContent).toContain('data-widget-key');
     el.remove();
   });
 
@@ -53,6 +65,7 @@ describe('mountInstagramFeed', () => {
     global.fetch.mockResolvedValue({ json: async () => MOCK_DATA });
     const { mountInstagramFeed } = getModule();
     const el = document.createElement('div');
+    el.dataset.widgetKey = 'test-key-123';
     document.body.appendChild(el);
     mountInstagramFeed(el);
     expect(el.innerHTML).toContain('Loading feed');
@@ -63,6 +76,7 @@ describe('mountInstagramFeed', () => {
     global.fetch.mockResolvedValue({ json: async () => MOCK_DATA });
     const { mountInstagramFeed } = getModule();
     const el = document.createElement('div');
+    el.dataset.widgetKey = 'test-key-123';
     document.body.appendChild(el);
     mountInstagramFeed(el);
     expect(document.getElementById('sf-ig-styles')).not.toBeNull();
@@ -73,6 +87,7 @@ describe('mountInstagramFeed', () => {
     global.fetch.mockRejectedValue(new Error('network error'));
     const { mountInstagramFeed } = getModule();
     const el = document.createElement('div');
+    el.dataset.widgetKey = 'test-key-123';
     document.body.appendChild(el);
     mountInstagramFeed(el);
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -84,6 +99,7 @@ describe('mountInstagramFeed', () => {
     global.fetch.mockResolvedValue({ json: async () => MOCK_DATA });
     const { mountInstagramFeed } = getModule();
     const el = document.createElement('div');
+    el.dataset.widgetKey = 'test-key-123';
     document.body.appendChild(el);
     mountInstagramFeed(el);
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -96,6 +112,7 @@ describe('mountInstagramFeed', () => {
     global.fetch.mockResolvedValue({ json: async () => MOCK_DATA });
     const { mountInstagramFeed } = getModule();
     const el = document.createElement('div');
+    el.dataset.widgetKey = 'test-key-123';
     document.body.appendChild(el);
     mountInstagramFeed(el);
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -117,6 +134,7 @@ describe('mountInstagramFeed', () => {
     global.fetch.mockResolvedValue({ json: async () => dataWithNullThumb });
     const { mountInstagramFeed } = getModule();
     const el = document.createElement('div');
+    el.dataset.widgetKey = 'test-key-123';
     document.body.appendChild(el);
     mountInstagramFeed(el);
     await new Promise(resolve => setTimeout(resolve, 10));

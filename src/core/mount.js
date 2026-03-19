@@ -13,7 +13,11 @@ function mountWidgets() {
     const widgetName = el.dataset.widget;
     const mount = WIDGETS[widgetName];
     if (mount) {
-      mount(el);
+      try {
+        mount(el);
+      } catch (err) {
+        console.error(`[SocialFeeds] Widget "${widgetName}" failed to mount:`, err);
+      }
     } else {
       console.warn(`[SocialFeeds] Unknown widget: "${widgetName}"`);
     }

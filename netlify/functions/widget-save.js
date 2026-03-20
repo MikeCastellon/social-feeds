@@ -25,7 +25,7 @@ exports.handler = async function (event) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
 
-  const { user_id, type, place_id, label } = payload;
+  const { user_id, type, place_id, label, theme } = payload;
   if (!type || !user_id) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'user_id and type are required' }) };
   }
@@ -36,6 +36,7 @@ exports.handler = async function (event) {
     type,
     widget_key: generateWidgetKey(),
     label: label || type,
+    theme: theme || '',
     updated_at: new Date().toISOString(),
   };
   if (type === 'google-reviews' && place_id) record.place_id = place_id;

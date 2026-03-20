@@ -1,6 +1,20 @@
 const FIELDS = 'rating,user_ratings_total,url,reviews';
 const { getWidgetConfig } = require('./widget-lookup');
 
+async function fetchPlaceDetails(placeId, apiKey, sort) {
+  const params = new URLSearchParams({
+    place_id: placeId,
+    fields: FIELDS,
+    key: apiKey,
+  });
+  if (sort) params.set('reviews_sort', sort);
+  const res = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?${params}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data.result || data.status !== 'OK') return null;
+  return data.result;
+}
+
 exports.handler = async function (event) {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -32,25 +46,31 @@ exports.handler = async function (event) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server misconfiguration' }) };
   }
 
-  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(config.place_id)}&fields=${FIELDS}&key=${apiKey}`;
+  // Fetch both sort orders in parallel to get up to 10 unique reviews
+  const [relevant, newest] = await Promise.all([
+    fetchPlaceDetails(config.place_id, apiKey, 'most_relevant'),
+    fetchPlaceDetails(config.place_id, apiKey, 'newest'),
+  ]);
 
-  let response;
-  try {
-    response = await fetch(url);
-  } catch (err) {
-    return { statusCode: 502, headers, body: JSON.stringify({ error: 'Google API unavailable' }) };
-  }
-
-  if (!response.ok) {
+  if (!relevant) {
     return { statusCode: 502, headers, body: JSON.stringify({ error: 'Google API error' }) };
   }
 
-  const data = await response.json();
-  if (!data.result || data.status !== 'OK') {
-    return { statusCode: 502, headers, body: JSON.stringify({ error: `Google Places error: ${data.status}` }) };
+  const { rating, user_ratings_total, url: mapsUrl } = relevant;
+
+  // Deduplicate by author_name + rating (Google doesn't provide a review ID)
+  const seen = new Set();
+  const reviews = [];
+  for (const list of [relevant.reviews || [], newest?.reviews || []]) {
+    for (const r of list) {
+      const key = `${r.author_name}|${r.rating}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        reviews.push(r);
+      }
+    }
   }
 
-  const { rating, user_ratings_total, url: mapsUrl, reviews } = data.result;
   return {
     statusCode: 200,
     headers,

@@ -54,6 +54,7 @@ function cardHTML(review) {
 
 function mountGoogleReviews(el) {
   const widgetKey = el.dataset.widgetKey;
+  const theme = el.dataset.theme || '';
   if (!widgetKey) {
     el.textContent = 'Missing data-widget-key';
     return;
@@ -66,9 +67,10 @@ function mountGoogleReviews(el) {
     document.head.appendChild(style);
   }
 
-  el.innerHTML = '<div class="sf-gr-wrap"><div class="sf-gr-loading">Loading reviews...</div></div>';
+  const themeClass = theme ? ' sf-gr-' + theme : '';
+  el.innerHTML = '<div class="sf-gr-wrap' + themeClass + '"><div class="sf-gr-loading">Loading reviews...</div></div>';
 
-  fetch('/.netlify/functions/google-reviews?widget_key=' + encodeURIComponent(widgetKey))
+  fetch('https://social-feeds-app.netlify.app/.netlify/functions/google-reviews?widget_key=' + encodeURIComponent(widgetKey))
     .then(function(r) { return r.json(); })
     .then(function(data) { renderWidget(el, data); })
     .catch(function() {
@@ -105,13 +107,37 @@ function renderWidget(el, data) {
     '<a class="sf-gr-btn" href="' + safeUrl + '" target="_blank" rel="noopener">Review us on Google</a>' +
     '</div>' +
     '<div class="sf-gr-carousel">' +
-    '<button class="sf-gr-arrow sf-gr-prev">&#8249;</button>' +
+    '<button class="sf-gr-arrow sf-gr-prev">&#10094;</button>' +
     '<div class="sf-gr-track">' + reviews.map(cardHTML).join('') + '</div>' +
-    '<button class="sf-gr-arrow sf-gr-next">&#8250;</button>' +
+    '<button class="sf-gr-arrow sf-gr-next">&#10095;</button>' +
     '</div>' +
-    '<div class="sf-gr-dots">' + dotsHTML + '</div>';
+    '<div class="sf-gr-dots">' + dotsHTML + '</div>' +
+    '<a class="sf-gr-viewall" href="' + safeUrl + '" target="_blank" rel="noopener">View All Reviews on Google</a>';
 
   var carouselEl = wrap.querySelector('.sf-gr-carousel');
+  var track = wrap.querySelector('.sf-gr-track');
+  var dots = wrap.querySelectorAll('.sf-gr-dot');
+
+  var contentWidth = 0;
+
+  function layoutCarousel() {
+    // getBoundingClientRect is more reliable than offsetWidth inside iframes/transforms
+    var rect = carouselEl.getBoundingClientRect();
+    var cs = window.getComputedStyle(carouselEl);
+    var contentW = rect.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    if (contentW <= 0) return 0;
+    var cardW = Math.floor(contentW / cardsPerPage) - 12; // 12 = 6px margin each side
+    wrap.querySelectorAll('.sf-gr-card').forEach(function(c) {
+      c.style.flex = '0 0 ' + cardW + 'px';
+      c.style.maxWidth = cardW + 'px';
+    });
+    track.style.width = (contentW * totalPages) + 'px';
+    return contentW;
+  }
+
+  function applyScroll() {
+    track.style.transform = 'translateX(-' + (page * contentWidth) + 'px)';
+  }
 
   // Read more toggle
   var readmoreBtns = wrap.querySelectorAll('.sf-gr-readmore');
@@ -126,13 +152,11 @@ function renderWidget(el, data) {
     });
   });
 
-  var track = wrap.querySelector('.sf-gr-track');
-  var dots = wrap.querySelectorAll('.sf-gr-dot');
-
   function goTo(p) {
-    page = Math.max(0, Math.min(p, totalPages - 1));
-    var containerWidth = carouselEl.offsetWidth || 0;
-    track.style.transform = 'translateX(-' + (page * containerWidth) + 'px)';
+    page = ((p % totalPages) + totalPages) % totalPages;
+    var w = layoutCarousel();
+    if (w > 0) contentWidth = w;
+    applyScroll();
     dots.forEach(function(d, i) {
       d.classList.toggle('active', i === page);
     });
@@ -143,6 +167,27 @@ function renderWidget(el, data) {
   dots.forEach(function(d) {
     d.addEventListener('click', function() { goTo(parseInt(d.dataset.idx, 10)); });
   });
+
+  // Use ResizeObserver so layout fires whenever the container gets/changes its size.
+  // Falls back to rAF polling for older browsers.
+  function doInitLayout() {
+    var w = layoutCarousel();
+    if (w > 0) {
+      contentWidth = w;
+      applyScroll();
+    }
+  }
+
+  if (typeof ResizeObserver !== 'undefined') {
+    var ro = new ResizeObserver(function() { doInitLayout(); });
+    ro.observe(el);
+  } else {
+    (function rAFLoop() {
+      if (contentWidth > 0) return;
+      doInitLayout();
+      if (!contentWidth) requestAnimationFrame(rAFLoop);
+    })();
+  }
 }
 
 module.exports = { mountGoogleReviews };

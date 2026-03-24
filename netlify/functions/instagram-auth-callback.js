@@ -67,25 +67,31 @@ exports.handler = async function (event) {
   // Per Instagram API docs: GET request to graph.instagram.com/access_token
   // with grant_type=ig_exchange_token, client_secret, and the short-lived access_token
   let longToken, expiresIn;
-  const exchangeUrls = [
-    `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${shortToken}`,
-    `https://graph.instagram.com/v22.0/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${shortToken}`,
-    // Facebook's long-lived token exchange (works for FB Login tokens)
-    `https://graph.facebook.com/v22.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortToken}`,
+  // Try GET first (documented method), then POST (some API versions require POST)
+  const exchangeConfigs = [
+    { url: `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${shortToken}`, method: 'GET' },
+    { url: `https://graph.instagram.com/access_token`, method: 'POST',
+      body: new URLSearchParams({ grant_type: 'ig_exchange_token', client_secret: appSecret, access_token: shortToken }).toString() },
+    { url: `https://graph.instagram.com/v22.0/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${shortToken}`, method: 'GET' },
+    { url: `https://graph.instagram.com/v22.0/access_token`, method: 'POST',
+      body: new URLSearchParams({ grant_type: 'ig_exchange_token', client_secret: appSecret, access_token: shortToken }).toString() },
   ];
-  for (const url of exchangeUrls) {
+  for (const cfg of exchangeConfigs) {
     try {
-      const label = url.split('?')[0];
+      const label = cfg.method + ' ' + cfg.url.split('?')[0];
       console.log('[ig-auth] trying long-lived exchange:', label);
-      const res = await fetch(url);
+      const opts = { method: cfg.method };
+      if (cfg.body) opts.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+      if (cfg.body) opts.body = cfg.body;
+      const res = await fetch(cfg.url, opts);
       const text = await res.text();
-      console.log('[ig-auth] exchange response:', label, res.status, text.slice(0, 200));
+      console.log('[ig-auth] exchange response:', label, res.status, text.slice(0, 300));
       if (res.ok) {
         const data = JSON.parse(text);
         if (data.access_token) {
           longToken = data.access_token;
           expiresIn = data.expires_in || 5184000;
-          console.log('[ig-auth] SUCCESS long-lived token from', label, 'expires in', expiresIn);
+          console.log('[ig-auth] SUCCESS long-lived token, expires in', expiresIn);
           break;
         }
       }

@@ -18,8 +18,7 @@ exports.handler = async function (event) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Server misconfiguration' }) };
   }
 
-  const fields = 'name,formatted_address,place_id,rating,user_ratings_total';
-  const url = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(q)}&inputtype=textquery&fields=${fields}&key=${apiKey}`;
+  const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(q)}&key=${apiKey}`;
 
   try {
     const response = await fetch(url);
@@ -27,7 +26,10 @@ exports.handler = async function (event) {
       return { statusCode: 502, headers, body: JSON.stringify({ error: 'Google API error' }) };
     }
     const data = await response.json();
-    const results = (data.candidates || []).map(function(c) {
+    if (data.status === 'REQUEST_DENIED') {
+      return { statusCode: 500, headers, body: JSON.stringify({ error: data.error_message || 'API key not authorized for Places' }) };
+    }
+    const results = (data.results || []).slice(0, 8).map(function(c) {
       return {
         name: c.name,
         address: c.formatted_address,

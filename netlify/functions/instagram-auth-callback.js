@@ -22,14 +22,15 @@ exports.handler = async function (event) {
   if (!userId) return { statusCode: 400, body: 'Missing state (user_id)' };
 
   // Step 1: Exchange code for short-lived token
-  // Try Instagram endpoint first, then Facebook Graph API
+  // Use Facebook Graph API first (works with new instagram_business_basic scope)
+  // then fall back to old Instagram endpoint
   const cleanCode = code.replace(/#_$/, ''); // strip trailing #_ if present
   console.log('[ig-auth] redirect_uri:', redirectUri);
   console.log('[ig-auth] code length:', cleanCode.length);
 
   const tokenEndpoints = [
-    'https://api.instagram.com/oauth/access_token',
     'https://graph.facebook.com/v22.0/oauth/access_token',
+    'https://api.instagram.com/oauth/access_token',
   ];
 
   let shortToken, igUserId;

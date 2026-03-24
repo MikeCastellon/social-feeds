@@ -65,16 +65,19 @@ exports.handler = async function (event) {
 
   try {
     // Try multiple URL formats — supports both old Basic Display and new Instagram Business Login
+    // Facebook Graph API endpoints work with tokens from the new instagram_business_basic flow
     const urls = [
+      // Facebook Graph API (new Business Login tokens)
+      { profile: `https://graph.facebook.com/v22.0/${igUserId}?fields=${PROFILE_FIELDS}&access_token=${token}`,
+        media: `https://graph.facebook.com/v22.0/${igUserId}/media?fields=${MEDIA_FIELDS}&limit=24&access_token=${token}` },
+      // Instagram Graph API with user ID (old tokens)
       { profile: `https://graph.instagram.com/v22.0/${igUserId}?fields=${PROFILE_FIELDS}&access_token=${token}`,
         media: `https://graph.instagram.com/v22.0/${igUserId}/media?fields=${MEDIA_FIELDS}&limit=24&access_token=${token}` },
       { profile: `https://graph.instagram.com/${igUserId}?fields=${PROFILE_FIELDS}&access_token=${token}`,
         media: `https://graph.instagram.com/${igUserId}/media?fields=${MEDIA_FIELDS}&limit=24&access_token=${token}` },
-      // New Instagram Login API uses /me endpoints
+      // /me endpoints
       { profile: `https://graph.instagram.com/v22.0/me?fields=${PROFILE_FIELDS}&access_token=${token}`,
         media: `https://graph.instagram.com/v22.0/me/media?fields=${MEDIA_FIELDS}&limit=24&access_token=${token}` },
-      { profile: `https://graph.instagram.com/me?fields=${PROFILE_FIELDS}&access_token=${token}`,
-        media: `https://graph.instagram.com/me/media?fields=${MEDIA_FIELDS}&limit=24&access_token=${token}` },
     ];
 
     let profileData, mediaData;

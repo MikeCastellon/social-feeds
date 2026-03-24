@@ -28,36 +28,90 @@ exports.handler = async function (event) {
     return { statusCode: 404, headers, body: JSON.stringify({ error: 'Widget not found' }) };
   }
 
-  const token = config.instagram_access_token;
+  let token = config.instagram_access_token;
+  const igUserId = config.instagram_user_id;
   if (!token) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Instagram token not configured' }) };
   }
 
-  const base = 'https://graph.instagram.com/me';
+  // Try to refresh token if it's close to expiry or expired
+  const tokenExpiry = config.instagram_token_expiry ? new Date(config.instagram_token_expiry) : null;
+  const isExpiredOrSoon = tokenExpiry && (tokenExpiry.getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000); // within 7 days
+  if (isExpiredOrSoon) {
+    try {
+      const refreshRes = await fetch(
+        `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${token}`
+      );
+      if (refreshRes.ok) {
+        const refreshData = await refreshRes.json();
+        token = refreshData.access_token;
+        const newExpiry = new Date(Date.now() + (refreshData.expires_in || 5184000) * 1000).toISOString();
+        // Update token in DB
+        const { getAdminClient } = require('../../src/lib/supabaseAdmin');
+        const supabase = getAdminClient();
+        await supabase.from('widget_configs').update({
+          instagram_access_token: token,
+          instagram_token_expiry: newExpiry,
+          updated_at: new Date().toISOString(),
+        }).eq('widget_key', widget_key);
+        console.log('[ig-feed] refreshed token for', widget_key);
+      } else {
+        console.log('[ig-feed] token refresh failed:', await refreshRes.text());
+      }
+    } catch (err) {
+      console.log('[ig-feed] token refresh error:', err.message);
+    }
+  }
 
   try {
-    const profileRes = await fetch(`${base}?fields=${PROFILE_FIELDS}&access_token=${token}`);
-    if (!profileRes.ok) {
-      return { statusCode: 502, headers, body: JSON.stringify({ error: 'Instagram API error' }) };
-    }
-    const profile = await profileRes.json();
+    // Try multiple URL formats — supports both old Basic Display and new Instagram Business Login
+    const urls = [
+      { profile: `https://graph.instagram.com/v22.0/${igUserId}?fields=${PROFILE_FIELDS}&access_token=${token}`,
+        media: `https://graph.instagram.com/v22.0/${igUserId}/media?fields=${MEDIA_FIELDS}&limit=24&access_token=${token}` },
+      { profile: `https://graph.instagram.com/${igUserId}?fields=${PROFILE_FIELDS}&access_token=${token}`,
+        media: `https://graph.instagram.com/${igUserId}/media?fields=${MEDIA_FIELDS}&limit=24&access_token=${token}` },
+      // New Instagram Login API uses /me endpoints
+      { profile: `https://graph.instagram.com/v22.0/me?fields=${PROFILE_FIELDS}&access_token=${token}`,
+        media: `https://graph.instagram.com/v22.0/me/media?fields=${MEDIA_FIELDS}&limit=24&access_token=${token}` },
+      { profile: `https://graph.instagram.com/me?fields=${PROFILE_FIELDS}&access_token=${token}`,
+        media: `https://graph.instagram.com/me/media?fields=${MEDIA_FIELDS}&limit=24&access_token=${token}` },
+    ];
 
-    const mediaRes = await fetch(`${base}/media?fields=${MEDIA_FIELDS}&limit=24&access_token=${token}`);
-    if (!mediaRes.ok) {
-      return { statusCode: 502, headers, body: JSON.stringify({ error: 'Instagram media error' }) };
+    let profileData, mediaData;
+    for (const u of urls) {
+      const pRes = await fetch(u.profile);
+      if (pRes.ok) {
+        profileData = await pRes.json();
+        const mRes = await fetch(u.media);
+        if (mRes.ok) {
+          mediaData = await mRes.json();
+          console.log('[ig-feed] success with:', u.profile.split('?')[0]);
+          break;
+        } else {
+          const mErr = await mRes.json();
+          console.log('[ig-feed] media failed:', u.media.split('?')[0], JSON.stringify(mErr));
+        }
+      } else {
+        const pErr = await pRes.json();
+        console.log('[ig-feed] profile failed:', u.profile.split('?')[0], JSON.stringify(pErr));
+      }
     }
-    const mediaData = await mediaRes.json();
+
+    if (!profileData || !mediaData) {
+      return { statusCode: 502, headers, body: JSON.stringify({ error: 'All Instagram API endpoints failed' }) };
+    }
 
     if (!Array.isArray(mediaData.data)) {
-      return { statusCode: 502, headers, body: JSON.stringify({ error: 'Instagram API error' }) };
+      return { statusCode: 502, headers, body: JSON.stringify({ error: 'Instagram API returned no media' }) };
     }
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ profile, posts: mediaData.data }),
+      body: JSON.stringify({ profile: profileData, posts: mediaData.data }),
     };
   } catch (err) {
+    console.error('[ig-feed] error:', err.message);
     return { statusCode: 502, headers, body: JSON.stringify({ error: 'Instagram API unavailable' }) };
   }
 };

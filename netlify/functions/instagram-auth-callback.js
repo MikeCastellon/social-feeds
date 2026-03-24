@@ -28,41 +28,43 @@ exports.handler = async function (event) {
   console.log('[ig-auth] redirect_uri:', redirectUri);
   console.log('[ig-auth] code length:', cleanCode.length);
 
-  const tokenEndpoints = [
-    'https://graph.facebook.com/v22.0/oauth/access_token',
-    'https://api.instagram.com/oauth/access_token',
-  ];
+  // For instagram_business_basic scope, ONLY use the Instagram API token endpoint
+  // The Facebook Graph API oauth endpoint does NOT work for Instagram Login tokens
+  // api.instagram.com returns short-lived IG tokens that must then be exchanged
+  const cleanCode = code.replace(/#_$/, '');
+  console.log('[ig-auth] code length:', cleanCode.length);
 
   let shortToken, igUserId;
   let lastError;
-  for (const tokenUrl of tokenEndpoints) {
-    try {
-      const tokenBody = new URLSearchParams({
-        client_id: appId,
-        client_secret: appSecret,
-        grant_type: 'authorization_code',
-        redirect_uri: redirectUri,
-        code: cleanCode,
-      });
-      console.log('[ig-auth] trying:', tokenUrl);
-      const res = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: tokenBody.toString(),
-      });
-      const data = await res.json();
-      if (res.ok && data.access_token) {
-        shortToken = data.access_token;
-        igUserId = data.user_id;
-        console.log('[ig-auth] got token from', tokenUrl, 'user_id:', igUserId);
-        break;
-      }
+
+  // Step 1a: Exchange code via Instagram API
+  try {
+    const tokenBody = new URLSearchParams({
+      client_id: appId,
+      client_secret: appSecret,
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri,
+      code: cleanCode,
+    });
+    console.log('[ig-auth] exchanging code at api.instagram.com');
+    const res = await fetch('https://api.instagram.com/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: tokenBody.toString(),
+    });
+    const data = await res.json();
+    console.log('[ig-auth] token response status:', res.status, 'has_token:', !!data.access_token, 'user_id:', data.user_id);
+    if (res.ok && data.access_token) {
+      shortToken = data.access_token;
+      igUserId = data.user_id;
+      console.log('[ig-auth] got short token, prefix:', shortToken.slice(0, 15), 'length:', shortToken.length);
+    } else {
       lastError = data;
-      console.log('[ig-auth] failed:', tokenUrl, JSON.stringify(data));
-    } catch (err) {
-      lastError = { error: err.message };
-      console.log('[ig-auth] error:', tokenUrl, err.message);
+      console.log('[ig-auth] token exchange failed:', JSON.stringify(data));
     }
+  } catch (err) {
+    lastError = { error: err.message };
+    console.log('[ig-auth] token exchange error:', err.message);
   }
 
   if (!shortToken) {
@@ -70,34 +72,37 @@ exports.handler = async function (event) {
   }
 
   // Step 2: Exchange for long-lived token (60 days)
-  // Try multiple exchange methods — the new Instagram API with Instagram Login
-  // uses a different exchange endpoint than the old Basic Display API
+  // Per Instagram API docs: GET request to graph.instagram.com/access_token
+  // with grant_type=ig_exchange_token, client_secret, and the short-lived access_token
   let longToken, expiresIn;
-  const exchangeEndpoints = [
+  const exchangeUrls = [
     `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${shortToken}`,
     `https://graph.instagram.com/v22.0/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${shortToken}`,
+    // Facebook's long-lived token exchange (works for FB Login tokens)
+    `https://graph.facebook.com/v22.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortToken}`,
   ];
-  for (const exchangeUrl of exchangeEndpoints) {
+  for (const url of exchangeUrls) {
     try {
-      console.log('[ig-auth] trying long-lived exchange:', exchangeUrl.split('?')[0]);
-      const res = await fetch(exchangeUrl);
+      const label = url.split('?')[0];
+      console.log('[ig-auth] trying long-lived exchange:', label);
+      const res = await fetch(url);
+      const text = await res.text();
+      console.log('[ig-auth] exchange response:', label, res.status, text.slice(0, 200));
       if (res.ok) {
-        const data = await res.json();
-        longToken = data.access_token;
-        expiresIn = data.expires_in || 5184000;
-        console.log('[ig-auth] got long-lived token, expires in', expiresIn);
-        break;
-      } else {
-        const errText = await res.text();
-        console.log('[ig-auth] exchange failed:', exchangeUrl.split('?')[0], errText);
+        const data = JSON.parse(text);
+        if (data.access_token) {
+          longToken = data.access_token;
+          expiresIn = data.expires_in || 5184000;
+          console.log('[ig-auth] SUCCESS long-lived token from', label, 'expires in', expiresIn);
+          break;
+        }
       }
     } catch (err) {
-      console.log('[ig-auth] exchange error:', exchangeUrl.split('?')[0], err.message);
+      console.log('[ig-auth] exchange error:', err.message);
     }
   }
   if (!longToken) {
-    // Fallback: use short token but warn
-    console.log('[ig-auth] WARNING: all long-lived exchanges failed, using short token (1 hour)');
+    console.log('[ig-auth] WARNING: all long-lived exchanges failed, using short token');
     longToken = shortToken;
     expiresIn = 3600;
   }
@@ -108,6 +113,8 @@ exports.handler = async function (event) {
     `https://graph.instagram.com/v22.0/me?fields=user_id,username&access_token=${longToken}`,
     `https://graph.instagram.com/me?fields=user_id,username&access_token=${longToken}`,
     `https://graph.instagram.com/${igUserId}?fields=user_id,username&access_token=${longToken}`,
+    `https://graph.facebook.com/v22.0/${igUserId}?fields=username,name&access_token=${longToken}`,
+    `https://graph.facebook.com/v22.0/me?fields=username,name&access_token=${longToken}`,
   ];
   for (const ep of endpoints) {
     try {

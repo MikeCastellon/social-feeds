@@ -226,6 +226,41 @@ const styles = `
   .sf-gr-colorful .sf-gr-avatar-initials { background: linear-gradient(135deg, #667eea, #764ba2); }
   .sf-gr-colorful .sf-gr-viewall { color: #fff; border-color: rgba(255,255,255,0.5); }
   .sf-gr-colorful .sf-gr-viewall:hover { background: rgba(255,255,255,0.2); color: #fff; }
+
+  /* ══════════════════════════════════════
+     MINIMAL THEME
+  ══════════════════════════════════════ */
+  .sf-gr-minimal.sf-gr-wrap { background: transparent; box-shadow: none; border: none; padding: 0; }
+  .sf-gr-minimal .sf-gr-card { background: transparent; border: none; box-shadow: none; border-bottom: 1px solid #e5e7eb; border-radius: 0; padding: 24px 0; }
+  .sf-gr-minimal .sf-gr-card:hover { box-shadow: none; transform: none; }
+  .sf-gr-minimal .sf-gr-arrow { display: none; }
+  .sf-gr-minimal .sf-gr-dots { display: none; }
+  .sf-gr-minimal .sf-gr-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 20px; margin-bottom: 8px; }
+  .sf-gr-minimal .sf-gr-btn { background: transparent; color: #1a1a1a; border: 1px solid #d1d5db; box-shadow: none; font-weight: 600; }
+  .sf-gr-minimal .sf-gr-btn:hover { background: #f3f4f6; }
+  .sf-gr-minimal .sf-gr-viewall { border: none; text-decoration: underline; }
+
+  /* ══════════════════════════════════════
+     WARM THEME
+  ══════════════════════════════════════ */
+  .sf-gr-warm.sf-gr-wrap { background: #fffbeb; border: 1px solid #fde68a; }
+  .sf-gr-warm .sf-gr-logo { color: #92400e; }
+  .sf-gr-warm .sf-gr-score { color: #92400e; }
+  .sf-gr-warm .sf-gr-count { color: #b45309; }
+  .sf-gr-warm .sf-gr-card { background: #fff; border-color: #fde68a; }
+  .sf-gr-warm .sf-gr-card:hover { box-shadow: 0 6px 24px rgba(180,120,0,0.1); }
+  .sf-gr-warm .sf-gr-name { color: #78350f; }
+  .sf-gr-warm .sf-gr-time { color: #b45309; }
+  .sf-gr-warm .sf-gr-text { color: #92400e; }
+  .sf-gr-warm .sf-gr-arrow { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+  .sf-gr-warm .sf-gr-dot { background: #fde68a; }
+  .sf-gr-warm .sf-gr-dot.active { background: #f59e0b; }
+  .sf-gr-warm .sf-gr-btn { background: #f59e0b; color: #fff; box-shadow: 0 4px 14px rgba(245,158,11,0.3); }
+  .sf-gr-warm .sf-gr-btn:hover { background: #d97706; }
+  .sf-gr-warm .sf-gr-check { color: #f59e0b; }
+  .sf-gr-warm .sf-gr-readmore { color: #b45309; }
+  .sf-gr-warm .sf-gr-viewall { color: #b45309; border-color: #b45309; }
+  .sf-gr-warm .sf-gr-viewall:hover { background: #b45309; color: #fff; }
 `;
 
 module.exports = { styles };
